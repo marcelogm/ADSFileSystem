@@ -46,24 +46,26 @@ void readLB(int idLB, byte* buffer) {
 
 void writeLB(int idLB, byte* buffer) {
 	byte bitmapPage[SB_TAM_BLOCO_FISICO];
-	int idFB = idLB *= DIR_PER_FB;
-	LeiaBlocoFisico(BM_CUR_PG, &bitmapPage);
+	int idFB = idLB * DIR_PER_FB;
+	int curPage = BM_CUR_PG;
+	LeiaBlocoFisico(curPage, &bitmapPage);
 	for (size_t i = 0; i < FB_PER_LB; i++) {
 		bitmapPage[BM_CUR_ITEM] = '1';
 		EscrevaBlocoFisico(RES_AREA_OFFSET + idFB++, &buffer[SB_TAM_BLOCO_FISICO * i]);
 	}
-	EscrevaBlocoFisico(BM_CUR_PG, &bitmapPage);
+	EscrevaBlocoFisico(curPage, &bitmapPage);
 }
 
 void freeLB(int idLB) {
 	byte bitmapPage[SB_TAM_BLOCO_FISICO];
 	int idFB = idLB *= DIR_PER_FB;
-	LeiaBlocoFisico(BM_CUR_PG, &bitmapPage);
+	int curPage = BM_CUR_PG;
+	LeiaBlocoFisico(curPage, &bitmapPage);
 	for (size_t i = 0; i < FB_PER_LB; i++) {
 		bitmapPage[BM_CUR_ITEM] = '0';
 		idFB++;
 	}
-	EscrevaBlocoFisico(BM_CUR_PG, &bitmapPage);
+	EscrevaBlocoFisico(curPage, &bitmapPage);
 }
 
 int findEmptyLB() {
@@ -187,7 +189,6 @@ int writeDir(char * name, char * ext, char * descr, char * flag, int size);
 
 #define CUR_PAGE(x) (x / DIR_PER_FB)
 #define CUR_ITEM(x) (x % DIR_PER_FB)
-#define NEXT (dirPage[CUR_ITEM(curItem)].next)
 #define CURRENT (dirPage[CUR_ITEM(curItem)])
 #define OFFSET (BITMAP_FB_COUNT)
 void listAllDirNodes() {
@@ -203,8 +204,8 @@ void listAllDirNodes() {
 		printf("iNodeReference: %d\n", CURRENT.iNodeReference);
 		printf("NextFCP: %d\n", CURRENT.next);
 		printf("====================\n");
-		if (NEXT == 0) return;
-		nextItem = NEXT;
+		if (dirPage[CUR_ITEM(curItem)].next == 0) return;
+		nextItem = dirPage[CUR_ITEM(curItem)].next;
 		if (CUR_PAGE(nextItem) != (CUR_PAGE(curItem)))
 			LeiaBlocoFisico(OFFSET + CUR_PAGE(nextItem), &dirPage);
 		curItem = nextItem;
@@ -250,8 +251,8 @@ int findDir(char * name) {
 	int curItem = 0, nextItem;
 	LeiaBlocoFisico(OFFSET, &dirPage);
 	while (strcmp(CURRENT.filename, name)) {
-		if (NEXT == 0) return -1;
-		nextItem = NEXT;
+		if (dirPage[CUR_ITEM(curItem)].next == 0) return -1;
+		nextItem = dirPage[CUR_ITEM(curItem)].next;
 		if (CUR_PAGE(nextItem) != (CUR_PAGE(curItem)))
 			LeiaBlocoFisico(OFFSET + CUR_PAGE(nextItem), &dirPage);
 		curItem = nextItem;
@@ -380,6 +381,28 @@ int writeSequence(int iNodeRef, int size, byte * content) {
 	EscrevaBlocoFisico(OFFSET + CUR_PAGE(iNodeRef), &iNodePage);
 }
 
+void readSequence(int iNodeRef, byte * content, int size) {
+	int i = size / SB_TAM_BLOCO_LOGICO, curLB, counter = 0;
+	iNode iNodePage[INODE_PER_FB];
+	bool ftExecution = true;
+	if ((size % SB_TAM_BLOCO_LOGICO) > 0) i++;
+	LeiaBlocoFisico(OFFSET + CUR_PAGE(iNodeRef), &iNodePage);
+	byte * localBuffer = malloc(sizeof(byte) * i * SB_TAM_BLOCO_LOGICO);
+	while (counter < i) {
+		if (iNodePage[CUR_ITEM(iNodeRef)].blockReference[counter % INODE_REFERENCES_COUNT] == 0) return;
+		if (((counter % INODE_REFERENCES_COUNT) == 0) && (ftExecution == false)) {
+			iNodeRef = iNodePage[CUR_ITEM(iNodeRef)].nextNode;
+			LeiaBlocoFisico(OFFSET + CUR_PAGE(iNodeRef), &iNodePage);
+		}
+		curLB = iNodePage[CUR_ITEM(iNodeRef)].blockReference[counter % INODE_REFERENCES_COUNT];
+		readLB(curLB, &localBuffer[counter * SB_TAM_BLOCO_LOGICO]);
+		counter++;
+		ftExecution = false;
+	}
+	memcpy(content, localBuffer, size);
+	free(localBuffer);
+}
+
 #undef CUR_PAGE(x)
 #undef CUR_ITEM(x)
 #undef OFFSET
@@ -437,8 +460,31 @@ bool deleteFile(char * name) {
 	return false;
 }
 
+void readFile(char * name, void * dados) {
+	int dirId = findDir(name);
+	if (dirId > 0) {
+		int curDirItem = dirId % DIR_PER_FB;
+		int curDirPage = dirId / DIR_PER_FB;
+		DirectoryNode dirPage[DIR_PER_FB];
+		LeiaBlocoFisico(BITMAP_FB_COUNT + curDirPage, &dirPage);
+		readSequence(dirPage[curDirItem].iNodeReference, dados, dirPage[curDirItem].size);
+	}
+	return false;
+}
+
 int main() {
 	formatDisk();
+	byte a[100000];
+	memset(&a, 'x', sizeof(a));
+	writeFile("Marcelo", "exe", 'r', "Um arquivo", sizeof(a), &a);
+	memset(&a, 'y', sizeof(a));
+	writeFile("Pedro", "exe", 'r', "Um arquivo", sizeof(a), &a);
+	readFile("Marcelo", &a);
+	deleteFile("Marcelo");
+	char b[] = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.";
+	writeFile("Lorem", "exe", 'r', "Um arquivo", sizeof(b), &b);
+
 	system("cls");listAllDirNodes();
+	listAllINodes();
 	return 1;
 }
