@@ -5,91 +5,179 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
-/*
-typedef struct  {
-
-    int coisa;
-} ADS_FILE;
-
-ADS_FILE* ADS_open( const char* filename);
-
-size_t ADS_write( const void* ptr, size_t size, size_t count, ADS_FILE* stream);
-
-size_t ADS_read(void* ptr, size_t size, size_t count, ADS_FILE* stream);
-
-int ADS_close(ADS_FILE* stream);
-
-ADS_FILE* ADS_open(const char * filename){
-	ADS_FILE* f = malloc(sizeof(ADS_FILE));
-	return f;
-}
-
-size_t ADS_write(const void * ptr, size_t size, size_t count, ADS_FILE * stream){
-	return 0;
-}
-
-size_t ADS_read(void * ptr, size_t size, size_t count, ADS_FILE * stream){
-	return 0;
-}
-
-int ADS_close(ADS_FILE * stream){
-	return 0;
-}
-
-*/
 
 namespace ADSFileSystemGUI
 {
-    public class ADSFile {
-        public ADSFile()
-        {
-        }
-        public string name { get; internal set; }
-        public string desc { get; internal set; }
-        public int size { get; internal set; }
-        public byte content { get; internal set; }
-        public IntPtr filePointer { get; internal set; }
-    };
-
-    class ADSIO
+    public class ADSFile
     {
+        public ADSFile(FileInfo info, byte[] data)
+        {
+            this.Info = info;
+            this.Data = data;
+        }
+        public FileInfo Info;
+        public byte[] Data;
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
+    public struct FileInfo
+    {
+        public FileInfo(string name, string desc, string ext, int size)
+        {
+            this.name = name;
+            this.desc = desc;
+            this.ext = ext;
+            this.size = size;
+        }
+
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 21)]
+        public string name;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 21)]
+        public string desc;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 4)]
+        public string ext;
+        [MarshalAs(UnmanagedType.I4)]
+        public int size;
+    }
+
+    public class ADSIO
+    {
+        #region DLLInteraction
         private const string dllUri = "C:\\Users\\marce\\documents\\visual studio 2015\\Projects\\ADSFileSystem\\ADSFileSystemGUI\\ADSFileSystem.dll";
         [DllImport(dllUri, CharSet = CharSet.Ansi, ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
         private extern static unsafe void writeFile(string name, string ext, char* flag, string descr, int size, byte* content);
         [DllImport(dllUri, CharSet = CharSet.Ansi, ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
-        private extern static unsafe bool deleteFile(string name);
+        private extern static bool deleteFile(string name);
         [DllImport(dllUri, CharSet = CharSet.Ansi, ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
-        private extern static unsafe void readFile(string name, byte[] dados);
+        private extern static void readFile(string name, byte[] dados);
         [DllImport(dllUri, CharSet = CharSet.Ansi, ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
-        private extern static unsafe bool existsFile(string name);
+        [return: MarshalAs(UnmanagedType.I1)]
+        private extern static bool existsFile(string name);
         [DllImport(dllUri, CharSet = CharSet.Ansi, ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
         public extern static void formatDisk();
+        [DllImport(dllUri, CharSet = CharSet.Ansi, ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
+        private extern static IntPtr getFileInfo(string name);
 
-        public unsafe static bool safeWriteFile(string name, string ext, char flag, string descr, int size, byte[] content) {
-           try {
+        private unsafe static bool safeWriteFile(string name, string ext, char flag, string descr, int size, byte[] content)
+        {
+            try
+            {
                 byte* pContent;
                 fixed (byte* p = content) pContent = p;
                 writeFile(name, ext, (char*)&flag, descr, size, pContent);
                 return true;
-            } catch (Exception e) {
+            }
+            catch (Exception e)
+            {
                 Debug.WriteLine("Exception: " + e.ToString());
                 return false;
             }
         }
-
-        private unsafe static bool safeDeleteFile(string name) {
-            return true;
+        private unsafe static bool safeDeleteFile(string name)
+        {
+            try
+            {
+                deleteFile(name);
+                return true;
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine("Exception: " + e.ToString());
+                return false;
+            }
+        }
+        private unsafe static byte[] safeReadFile(string name, int size)
+        {
+            try
+            {
+                var target = new byte[size];
+                readFile(name, target);
+                return target;
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine("Exception: " + e.ToString());
+                return null;
+            }
+        }
+        #endregion
+      
+        public ADSFile OpenFile(string fileName, string extension, string description)
+        {
+            ADSFile file; FileInfo info;
+            if (existsFile(fileName))
+            {
+                IntPtr ptr = getFileInfo(fileName);
+                info = (FileInfo)Marshal.PtrToStructure(ptr, typeof(FileInfo));
+                file = new ADSFile(info, null);
+                readFile(file.Info.name, file.Data);
+            }
+            else
+            {
+                info = new FileInfo(fileName, description, extension, 0);
+                file = new ADSFile(info, null);
+            }
+            return file;
         }
 
-        public unsafe static byte[] safeReadFile(string name, int size) {
-            var target = new byte[size];
-            readFile(name, target);
-            return target;
+        public int WriteFile(byte[] data, int size, int count, ADSFile stream)
+        {
+            if (size == 0 || count == 0) return -1;
+            try
+            {
+                byte[] buffer = new byte[size * count];
+                int i = 0;
+                for (i = 0; i < count; i++)
+                    Array.Copy(data, size * i, buffer, size * i, size);
+                stream.Info = new FileInfo(stream.Info.name, stream.Info.desc, stream.Info.ext, size * count);
+                stream.Data = buffer;
+                return i;
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine("Exception: " + e);
+                return -1;
+            }
         }
 
-        private unsafe static bool safeExistsFile(string name) {
+        public byte[] ReadFile(int size, int count, ADSFile stream)
+        {
+            if (size == 0 || count == 0) return null;
+            try {
+                if ((size * count) > stream.Info.size) return null;
+                byte[] buffer = new byte[size * count];
+                int i = 0;
+                for (i = 0; i < count; i++)
+                    Array.Copy(stream.Data, size * i, buffer, size * i, size);
+                //buffer[size * i] = stream.Data[size * i];
+                return buffer;
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine("Exception: " + e);
+                return null;
+            }
+        }
 
-            return existsFile(null);
+        public bool CloseFile(ADSFile stream)
+        {
+            if (!stream.Equals(null))
+            {
+                try
+                {
+                    return safeWriteFile(stream.Info.name, 
+                        stream.Info.ext, 'f', 
+                        stream.Info.desc, 
+                        stream.Info.size, 
+                        stream.Data); 
+                }
+                catch (Exception e)
+                {
+                    Debug.WriteLine("Exception: " + e);
+                    return false;
+                }
+            }
+            return false;
         }
     }
 }

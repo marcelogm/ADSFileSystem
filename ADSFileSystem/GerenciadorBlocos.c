@@ -212,6 +212,21 @@ void listAllDirNodes() {
 	}
 }
 
+int countAllDirNodes() {
+	DirectoryNode dirPage[DIR_PER_FB];
+	int curItem = 0, nextItem, i = 0;
+	LeiaBlocoFisico(OFFSET, &dirPage); // BITMAP_FB_COUT => OFFSET
+	while (true) { // HORRIVEL, EU SEI
+		i++;
+		if (dirPage[CUR_ITEM(curItem)].next == 0) return i;
+		nextItem = dirPage[CUR_ITEM(curItem)].next;
+		if (CUR_PAGE(nextItem) != (CUR_PAGE(curItem)))
+			LeiaBlocoFisico(OFFSET + CUR_PAGE(nextItem), &dirPage);
+		curItem = nextItem;
+	}
+	return i;
+}
+
 int findEmptyDirNode() {
 	int curDirId = 0, counter = 0, curPage = 0, curItem = 0;
 	DirectoryNode dirPage[DIR_PER_FB];
@@ -473,22 +488,32 @@ void readFile(char * name, byte * dados) {
 }
 
 bool existsFile(char * name) {
-	return findDir(name);
+	if (findDir(name) > 0) return true;
+	else return false;
 }
+
+FileInfo * getFileInfo(char * name) {
+	FileInfo * fi = malloc(sizeof(FileInfo));
+	int dirId = findDir(name);
+	if (dirId > 0) {
+		int curDirItem = dirId % DIR_PER_FB;
+		int curDirPage = dirId / DIR_PER_FB;
+		DirectoryNode dirPage[DIR_PER_FB];
+		LeiaBlocoFisico(BITMAP_FB_COUNT + curDirPage, &dirPage);
+		memcpy(&fi->name, dirPage[curDirItem].filename, sizeof(fi->name));
+		memcpy(&fi->ext, dirPage[curDirItem].fileExtension, sizeof(fi->ext));
+		memcpy(&fi->desc, dirPage[curDirItem].description, sizeof(fi->desc));
+		fi->size = dirPage[curDirItem].size;
+	}
+	else
+		memset(fi, 0, sizeof(fi));
+	return fi;
+}
+
 /*
 int main() {
 	formatDisk();
-	byte a[100000];
-	memset(&a, 'x', sizeof(a));
-	writeFile("Marcelo", "exe", 'r', "Um arquivo", sizeof(a), &a);
-	memset(&a, 'y', sizeof(a));
-	writeFile("Pedro", "exe", 'r', "Um arquivo", sizeof(a), &a);
-	readFile("Marcelo", &a);
-	deleteFile("Marcelo");
-	char b[] = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.";
-	writeFile("Lorem", "exe", 'r', "Um arquivo", sizeof(b), &b);
-
-	system("cls");listAllDirNodes();
-	listAllINodes();
+	writeFile("Marcelo", "exe", 'f', "arquivo", 6, "abcde");
+	printf("%d",existsFile("Marcelo"));
 	return 1;
 }*/
