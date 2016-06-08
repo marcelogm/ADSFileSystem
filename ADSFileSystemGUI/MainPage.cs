@@ -16,9 +16,13 @@ namespace ADSFileSystemGUI
     {
         public MainPage()
         {
-            ADSIO.formatDisk();
             InitializeComponent();
-            MessageBox.Show("Disco Virtual Formatado!");
+            DialogResult response = MessageBox.Show("Deseja formatar o Disco Virtual?", 
+                "Disco Virtual", 
+                MessageBoxButtons.YesNo, 
+                MessageBoxIcon.Asterisk);
+            if (response == DialogResult.Yes)
+                ADSIO.formatDisk();
         }
 
         private byte[] fileBuffer;
@@ -27,20 +31,11 @@ namespace ADSFileSystemGUI
         {
             if (ofdFilePicker.ShowDialog() == DialogResult.OK)
             {
+                txbExtension.Enabled = true;
+                txbFileName.Enabled = true;
+                btnSaveInDisk.Enabled = true;
                 try
                 {
-                    /*
-                    lblArquivo.Text = ofdFilePicker.SafeFileName;
-                    ADSIO connector = new ADSIO();
-                    string fileName = Path.GetFileNameWithoutExtension(ofdFilePicker.SafeFileName);
-                    string fileExt = Path.GetExtension(ofdFilePicker.SafeFileName);
-                    ADSFile file = connector.OpenFile(fileName, fileExt, "File");
-
-                    byte[] data = File.ReadAllBytes(ofdFilePicker.FileName);
-                    int writed = connector.WriteFile(data, 1, data.Length, file);
-                    Debug.WriteLine("Bytes escritos: " + writed);
-                    connector.CloseFile(file);
-                */
                     lblArquivo.Text = ofdFilePicker.SafeFileName;
                     this.fileBuffer = File.ReadAllBytes(ofdFilePicker.FileName);
                 }
@@ -51,72 +46,68 @@ namespace ADSFileSystemGUI
             }
         }
 
-        private void btnTester_Click(object sender, EventArgs e)
-        {
-            //FileInfo[] array = ADSIO.safeGetFileList();
-        }
-
-        
-
         private void btnSaveInDisk_Click(object sender, EventArgs e)
         {
             if (txbExtension.Text != "" && txbFileName.Text != "")
             {
-                ADSIO connector = new ADSIO();
-                string fName = txbFileName.Text;
-                string fExt = txbExtension.Text;
-                ADSFile file = connector.OpenFile(fName, fExt, "File");
-                int writed = connector.WriteFile(this.fileBuffer, 1, fileBuffer.Length, file);
-                Debug.WriteLine("Bytes escritos: " + writed);
-                connector.CloseFile(file);
-            }
-            
-
-            /*
-            if (svfSaveFile.ShowDialog() == DialogResult.OK)
-            {
                 try
                 {
                     ADSIO connector = new ADSIO();
-                    string fileName = Path.GetFileNameWithoutExtension(svfSaveFile.FileName);
-                    string fileExt = Path.GetExtension(svfSaveFile.FileName);
-                    ADSFile file = connector.OpenFile(fileName, fileExt, "File");
-
-                    byte[] bFile = connector.ReadFile(1, file.Info.size, file);
+                    string fName = txbFileName.Text;
+                    string fExt = txbExtension.Text;
+                    ADSFile file = connector.OpenFile(fName, fExt, "File");
+                    int writed = connector.WriteFile(this.fileBuffer, 1, fileBuffer.Length, file);
+                    Debug.WriteLine("Bytes escritos: " + writed);
                     connector.CloseFile(file);
-                    File.WriteAllBytes(svfSaveFile.FileName, bFile);
+                    tslFeedBack.Text = "Arquivo enviado.";
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-                    MessageBox.Show("Erro ao abrir arquivo.");
+                    Debug.WriteLine("Exception: " + ex.ToString());
+                    tslFeedBack.Text = "Erro ao enviar arquivo.";
                 }
-            }*/
+            }
+            else tslFeedBack.Text = "Digite valores válidos.";
         }
-
-        private void txbExtension_TextChanged(object sender, EventArgs e)
-        {
-
-        }
-        
 
         private void btnRecover_Click(object sender, EventArgs e)
         {
+            ADSIO connector = new ADSIO();
+            ADSFile file = connector.OpenFile(txbRecover.Text, "", "");
+            svfSaveFile.FileName = file.Info.name + "." + file.Info.ext;
+            if (file.Data == null)
+            {
+                tslFeedBack.Text = "O arquivo não existe.";
+                return;
+            }
             if (svfSaveFile.ShowDialog() == DialogResult.OK)
             {
                 try
-                {
-                    ADSIO connector = new ADSIO();
-                    ADSFile file = connector.OpenFile(txbRecover.Text, "", "");
+                { 
                     byte[] bFile = connector.ReadFile(1, file.Info.size, file);
-                    svfSaveFile.FileName = file.Info.name + "." + file.Info.ext;
-                    connector.CloseFile(file);
                     File.WriteAllBytes(svfSaveFile.FileName, bFile);
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-                    MessageBox.Show("Erro ao abrir arquivo.");
+                    Debug.WriteLine("Exception: " + ex.ToString());
+                    tslFeedBack.Text = "Não foi recuperar o arquivo.";
+                }
+                finally
+                {
+                    connector.CloseFile(file);
                 }
             }
+        }
+
+        private void tsiSobre_Click(object sender, EventArgs e)
+        {
+            About abt = new About();
+            abt.Show();
+        }
+
+        private void tsiSair_Click(object sender, EventArgs e)
+        {
+            this.Close();
         }
     }
 }

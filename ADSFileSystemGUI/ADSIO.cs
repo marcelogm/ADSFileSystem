@@ -109,8 +109,9 @@ namespace ADSFileSystemGUI
             {
                 IntPtr ptr = getFileInfo(fileName);
                 info = (FileInfo)Marshal.PtrToStructure(ptr, typeof(FileInfo));
-                file = new ADSFile(info, null);
-                readFile(file.Info.name, file.Data);
+                byte[] buffer = new byte[info.size];
+                readFile(info.name, buffer);
+                file = new ADSFile(info, buffer);
             }
             else
             {
@@ -149,7 +150,6 @@ namespace ADSFileSystemGUI
                 int i = 0;
                 for (i = 0; i < count; i++)
                     Array.Copy(stream.Data, size * i, buffer, size * i, size);
-                //buffer[size * i] = stream.Data[size * i];
                 return buffer;
             }
             catch (Exception e)
