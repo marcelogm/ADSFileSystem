@@ -7,7 +7,7 @@
 #include "GerenciadorBlocos.h"
 
 typedef unsigned char byte;
-#define DEBUG true
+//#define DEBUG true
 
 #define DISK_GB_SIZE 16
 #define DISK_TOTAL_SIZE (((DISK_GB_SIZE) * 1024) * 1024)
@@ -460,7 +460,7 @@ bool deleteFile(char * name) {
 	return false;
 }
 
-void readFile(char * name, void * dados) {
+void readFile(char * name, byte * dados) {
 	int dirId = findDir(name);
 	if (dirId > 0) {
 		int curDirItem = dirId % DIR_PER_FB;
@@ -472,6 +472,10 @@ void readFile(char * name, void * dados) {
 	return false;
 }
 
+bool existsFile(char * name) {
+	return findDir(name);
+}
+/*
 int main() {
 	formatDisk();
 	byte a[100000];
@@ -487,4 +491,4 @@ int main() {
 	system("cls");listAllDirNodes();
 	listAllINodes();
 	return 1;
-}
+}*/

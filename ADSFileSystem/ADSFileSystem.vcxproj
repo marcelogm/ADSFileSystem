@@ -19,12 +19,10 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="adsio.c" />
     <ClCompile Include="Driver.c" />
     <ClCompile Include="GerenciadorBlocos.c" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="adsio.h" />
     <ClInclude Include="Driver.h" />
     <ClInclude Include="GerenciadorBlocos.h" />
   </ItemGroup>
@@ -34,7 +32,7 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v120</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>

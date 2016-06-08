@@ -19,5 +19,10 @@ typedef struct DIR_NODE{
 	int next;
 } DirectoryNode;
 
+#include <stdio.h>
 
-
+__declspec(dllexport) void writeFile(char * name, char * ext, char * flag, char * descr, int size, byte * content);
+__declspec(dllexport) bool deleteFile(char * name);
+__declspec(dllexport) void readFile(char * name, byte * dados);
+__declspec(dllexport) bool existsFile(char * name);
+__declspec(dllexport) void formatDisk();
