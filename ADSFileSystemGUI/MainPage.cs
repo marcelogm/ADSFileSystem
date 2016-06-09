@@ -1,13 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Diagnostics;
-using System.Drawing;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace ADSFileSystemGUI
@@ -24,7 +17,7 @@ namespace ADSFileSystemGUI
             if (response == DialogResult.Yes)
                 ADSIO.formatDisk();
         }
-
+        
         private byte[] fileBuffer;
          
         private void btnFileOpen_Click(object sender, EventArgs e)

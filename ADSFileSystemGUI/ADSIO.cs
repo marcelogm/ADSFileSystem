@@ -1,10 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ADSFileSystemGUI
 {
@@ -15,8 +11,8 @@ namespace ADSFileSystemGUI
             this.Info = info;
             this.Data = data;
         }
-        public FileInfo Info;
-        public byte[] Data;
+        public FileInfo Info { get; set; }
+        public byte[] Data { get; set; }
     }
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
@@ -43,13 +39,13 @@ namespace ADSFileSystemGUI
     public class ADSIO
     {
         #region DLLInteraction
-        private const string dllUri = "C:\\Users\\marce\\documents\\visual studio 2015\\Projects\\ADSFileSystem\\ADSFileSystemGUI\\ADSFileSystem.dll";
+        private const string dllUri = "ADSFileSystem.dll";
         [DllImport(dllUri, CharSet = CharSet.Ansi, ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
         private extern static unsafe void writeFile(string name, string ext, char* flag, string descr, int size, byte* content);
         [DllImport(dllUri, CharSet = CharSet.Ansi, ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
         private extern static bool deleteFile(string name);
         [DllImport(dllUri, CharSet = CharSet.Ansi, ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
-        private extern static void readFile(string name, byte[] dados);
+        private extern static bool readFile(string name, byte[] dados);
         [DllImport(dllUri, CharSet = CharSet.Ansi, ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.I1)]
         private extern static bool existsFile(string name);
@@ -73,7 +69,7 @@ namespace ADSFileSystemGUI
                 return false;
             }
         }
-        private unsafe static bool safeDeleteFile(string name)
+        private static bool safeDeleteFile(string name)
         {
             try
             {
@@ -86,7 +82,7 @@ namespace ADSFileSystemGUI
                 return false;
             }
         }
-        private unsafe static byte[] safeReadFile(string name, int size)
+        private static byte[] safeReadFile(string name, int size)
         {
             try
             {

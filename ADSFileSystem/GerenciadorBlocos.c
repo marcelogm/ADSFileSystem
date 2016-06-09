@@ -41,40 +41,40 @@ int findEmptyLB();
 void readLB(int idLB, byte* buffer) {
 	int idFB = idLB * FB_PER_LB; // GET FB ID
 	for (size_t i = 0; i < FB_PER_LB; i++)
-		LeiaBlocoFisico(RES_AREA_OFFSET + idFB++, &buffer[SB_TAM_BLOCO_FISICO * i]);
+		LeiaBlocoFisico(RES_AREA_OFFSET + idFB++, (void *)&buffer[SB_TAM_BLOCO_FISICO * i]);
 }
 
 void writeLB(int idLB, byte* buffer) {
 	byte bitmapPage[SB_TAM_BLOCO_FISICO];
 	int idFB = idLB * DIR_PER_FB;
 	int curPage = BM_CUR_PG;
-	LeiaBlocoFisico(curPage, &bitmapPage);
+	LeiaBlocoFisico(curPage, (void *)&bitmapPage);
 	for (size_t i = 0; i < FB_PER_LB; i++) {
 		bitmapPage[BM_CUR_ITEM] = '1';
-		EscrevaBlocoFisico(RES_AREA_OFFSET + idFB++, &buffer[SB_TAM_BLOCO_FISICO * i]);
+		EscrevaBlocoFisico(RES_AREA_OFFSET + idFB++, (void *)&buffer[SB_TAM_BLOCO_FISICO * i]);
 	}
-	EscrevaBlocoFisico(curPage, &bitmapPage);
+	EscrevaBlocoFisico(curPage, (void *)&bitmapPage);
 }
 
 void freeLB(int idLB) {
 	byte bitmapPage[SB_TAM_BLOCO_FISICO];
 	int idFB = idLB *= DIR_PER_FB;
 	int curPage = BM_CUR_PG;
-	LeiaBlocoFisico(curPage, &bitmapPage);
+	LeiaBlocoFisico(curPage, (void *)&bitmapPage);
 	for (size_t i = 0; i < FB_PER_LB; i++) {
 		bitmapPage[BM_CUR_ITEM] = '0';
 		idFB++;
 	}
-	EscrevaBlocoFisico(curPage, &bitmapPage);
+	EscrevaBlocoFisico(curPage, (void *)&bitmapPage);
 }
 
 int findEmptyLB() {
 	byte bitmapPage[SB_TAM_BLOCO_FISICO];
-	LeiaBlocoFisico(0, &bitmapPage);
+	LeiaBlocoFisico(0, (void *)&bitmapPage);
 	int idFB = 0, idLB = 0, bmCurPage = 0, bmCurItem = 0;
 	do {
 		if (BM_CUR_ITEM != bmCurPage)
-			LeiaBlocoFisico(BM_CUR_PG, &bitmapPage);
+			LeiaBlocoFisico(BM_CUR_PG, (void *)&bitmapPage);
 		bmCurPage = BM_CUR_PG;
 		bmCurItem = BM_CUR_ITEM;
 		idLB = ((((bmCurPage * SB_TAM_BLOCO_FISICO) + bmCurItem) - RES_AREA_OFFSET) / FB_PER_LB);
@@ -119,14 +119,14 @@ void diskSpec() {
 
 void bitmapCreate() {
 	byte bitmapPage[SB_TAM_BLOCO_FISICO];
-	memset(&bitmapPage, '0', SB_TAM_BLOCO_FISICO * sizeof(byte));
+	memset((void *)&bitmapPage, '0', SB_TAM_BLOCO_FISICO * sizeof(byte));
 	for (size_t i = 0; i < BITMAP_FB_COUNT; i++)
-		EscrevaBlocoFisico(i, &bitmapPage);
+		EscrevaBlocoFisico(i, (void *)&bitmapPage);
 }
 
 void dirTreeCreate() {
 	DirectoryNode dirPage[DIR_FB_COUNT];
-	memset(&dirPage, 0, SB_TAM_BLOCO_FISICO);
+	memset((void *)&dirPage, 0, SB_TAM_BLOCO_FISICO);
 	for (size_t i = 0; i < DIR_FB_COUNT; i++) {
 		for (size_t j = 0; j < DIR_PER_FB; j++) {
 			dirPage[j].id = j + (i * DIR_PER_FB);
@@ -134,32 +134,32 @@ void dirTreeCreate() {
 			dirPage[j].iNodeReference = -1;
 			dirPage[j].next = 0;
 		}
-		EscrevaBlocoFisico(BITMAP_FB_COUNT + i, &dirPage); // BITMAP_FB_COUNT => OFFSET
+		EscrevaBlocoFisico(BITMAP_FB_COUNT + i, (void *)&dirPage); // BITMAP_FB_COUNT => OFFSET
 	}
-	LeiaBlocoFisico(BITMAP_FB_COUNT, &dirPage);
+	LeiaBlocoFisico(BITMAP_FB_COUNT, (void *)&dirPage);
 	strcpy(dirPage[0].filename, "/");
 	strcpy(dirPage[0].description, "Root directory");
-	EscrevaBlocoFisico(BITMAP_FB_COUNT, &dirPage);
+	EscrevaBlocoFisico(BITMAP_FB_COUNT, (void *)&dirPage);
 }
 
 void iNodesCreate() {
 	iNode iNodePage[INODE_PER_FB];
-	memset(&iNodePage, 0, SB_TAM_BLOCO_FISICO);
+	memset((void *)&iNodePage, 0, SB_TAM_BLOCO_FISICO);
 	for (size_t i = 0; i < INODE_FB_COUNT; i++) {
 		for (size_t j = 0; j < INODE_PER_FB; j++)
 			iNodePage[j].id = j + (i * INODE_PER_FB);
-		EscrevaBlocoFisico(BITMAP_FB_COUNT + DIR_FB_COUNT + i, &iNodePage);
+		EscrevaBlocoFisico(BITMAP_FB_COUNT + DIR_FB_COUNT + i, (void *)&iNodePage);
 	}
 }
 
 void bitmapSetReservedArea() {
 	byte bitmapPage[SB_TAM_BLOCO_FISICO];
-	memset(&bitmapPage, '1', SB_TAM_BLOCO_FISICO * sizeof(byte));
+	memset((void *)&bitmapPage, '1', SB_TAM_BLOCO_FISICO * sizeof(byte));
 	for (size_t i = 0; i < (RES_AREA_OFFSET / SB_TAM_BLOCO_FISICO); i++)
-		EscrevaBlocoFisico(i, &bitmapPage);
-	memset(&bitmapPage, '0', SB_TAM_BLOCO_FISICO * sizeof(byte));
-	memset(&bitmapPage, '1', (RES_AREA_OFFSET % SB_TAM_BLOCO_FISICO));
-	EscrevaBlocoFisico((RES_AREA_OFFSET / SB_TAM_BLOCO_FISICO), &bitmapPage);
+		EscrevaBlocoFisico(i, (void *)&bitmapPage);
+	memset((void *)&bitmapPage, '0', SB_TAM_BLOCO_FISICO * sizeof(byte));
+	memset((void *)&bitmapPage, '1', (RES_AREA_OFFSET % SB_TAM_BLOCO_FISICO));
+	EscrevaBlocoFisico((RES_AREA_OFFSET / SB_TAM_BLOCO_FISICO), (void *)&bitmapPage);
 }
 
 void formatDisk() {
@@ -174,9 +174,9 @@ void formatDisk() {
 	writeLB(0, "\0");
 	// Primeiro inode nao vai ser referenciado
 	iNode iNodePage[INODE_PER_FB];
-	LeiaBlocoFisico(BITMAP_FB_COUNT + DIR_FB_COUNT, &iNodePage);
+	LeiaBlocoFisico(BITMAP_FB_COUNT + DIR_FB_COUNT, (void *)&iNodePage);
 	iNodePage[0].flag = '1';
-	EscrevaBlocoFisico(BITMAP_FB_COUNT + DIR_FB_COUNT, &iNodePage);
+	EscrevaBlocoFisico(BITMAP_FB_COUNT + DIR_FB_COUNT, (void *)&iNodePage);
 }
 #pragma endregion
 
@@ -194,7 +194,7 @@ int writeDir(char * name, char * ext, char * descr, char * flag, int size);
 void listAllDirNodes() {
 	DirectoryNode dirPage[DIR_PER_FB];
 	int curItem = 0, nextItem;
-	LeiaBlocoFisico(OFFSET, &dirPage); // BITMAP_FB_COUT => OFFSET
+	LeiaBlocoFisico(OFFSET, (void *)&dirPage); // BITMAP_FB_COUT => OFFSET
 	while (true) { // HORRIVEL, EU SEI
 		printf("Filename: %s\n", CURRENT.filename);
 		printf("FileExtention: %s\n", CURRENT.fileExtension);
@@ -207,7 +207,7 @@ void listAllDirNodes() {
 		if (dirPage[CUR_ITEM(curItem)].next == 0) return;
 		nextItem = dirPage[CUR_ITEM(curItem)].next;
 		if (CUR_PAGE(nextItem) != (CUR_PAGE(curItem)))
-			LeiaBlocoFisico(OFFSET + CUR_PAGE(nextItem), &dirPage);
+			LeiaBlocoFisico(OFFSET + CUR_PAGE(nextItem), (void *)&dirPage);
 		curItem = nextItem;
 	}
 }
@@ -215,13 +215,13 @@ void listAllDirNodes() {
 int countAllDirNodes() {
 	DirectoryNode dirPage[DIR_PER_FB];
 	int curItem = 0, nextItem, i = 0;
-	LeiaBlocoFisico(OFFSET, &dirPage); // BITMAP_FB_COUT => OFFSET
+	LeiaBlocoFisico(OFFSET, (void *)&dirPage); // BITMAP_FB_COUT => OFFSET
 	while (true) { // HORRIVEL, EU SEI
 		i++;
 		if (dirPage[CUR_ITEM(curItem)].next == 0) return i;
 		nextItem = dirPage[CUR_ITEM(curItem)].next;
 		if (CUR_PAGE(nextItem) != (CUR_PAGE(curItem)))
-			LeiaBlocoFisico(OFFSET + CUR_PAGE(nextItem), &dirPage);
+			LeiaBlocoFisico(OFFSET + CUR_PAGE(nextItem), (void *)&dirPage);
 		curItem = nextItem;
 	}
 	return i;
@@ -230,10 +230,10 @@ int countAllDirNodes() {
 int findEmptyDirNode() {
 	int curDirId = 0, counter = 0, curPage = 0, curItem = 0;
 	DirectoryNode dirPage[DIR_PER_FB];
-	LeiaBlocoFisico(OFFSET, &dirPage); // BITMAP_FB_COUNT => OFFSET
+	LeiaBlocoFisico(OFFSET, (void *)&dirPage); // BITMAP_FB_COUNT => OFFSET
 	do {
 		if (curPage != CUR_PAGE(counter))
-			LeiaBlocoFisico(OFFSET + CUR_PAGE(counter), &dirPage);
+			LeiaBlocoFisico(OFFSET + CUR_PAGE(counter), (void *)&dirPage);
 		curPage = CUR_PAGE(counter);
 		curItem = CUR_ITEM(counter);
 		curDirId = dirPage[curItem].id;
@@ -246,17 +246,17 @@ void dirNodeSetValues(DirectoryNode * dirNode, char * name, char * ext, char * d
 	strcpy(dirNode->filename, name);
 	strcpy(dirNode->fileExtension, ext);
 	strcpy(dirNode->description, descr);
-	dirNode->flag = flag;
+	dirNode->flag = (unsigned char)flag;
 	dirNode->next = nextNode;
 	dirNode->size = size;
 }
 
 int findPrevDir(int dirId) {
 	DirectoryNode dirPage[DIR_PER_FB];
-	LeiaBlocoFisico(OFFSET + CUR_PAGE(dirId), &dirPage);
+	LeiaBlocoFisico(OFFSET + CUR_PAGE(dirId), (void *)&dirPage);
 	while (!strcmp(dirPage[CUR_ITEM(--dirId)].filename, "")) {
 		if ((CUR_PAGE(dirId)) != (CUR_PAGE(dirId - 1)))
-			LeiaBlocoFisico(OFFSET + CUR_PAGE(dirId), &dirPage);
+			LeiaBlocoFisico(OFFSET + CUR_PAGE(dirId), (void *)&dirPage);
 	}
 	return dirId;
 }
@@ -264,12 +264,12 @@ int findPrevDir(int dirId) {
 int findDir(char * name) {
 	DirectoryNode dirPage[DIR_PER_FB];
 	int curItem = 0, nextItem;
-	LeiaBlocoFisico(OFFSET, &dirPage);
+	LeiaBlocoFisico(OFFSET, (void *)&dirPage);
 	while (strcmp(CURRENT.filename, name)) {
 		if (dirPage[CUR_ITEM(curItem)].next == 0) return -1;
 		nextItem = dirPage[CUR_ITEM(curItem)].next;
 		if (CUR_PAGE(nextItem) != (CUR_PAGE(curItem)))
-			LeiaBlocoFisico(OFFSET + CUR_PAGE(nextItem), &dirPage);
+			LeiaBlocoFisico(OFFSET + CUR_PAGE(nextItem), (void *)&dirPage);
 		curItem = nextItem;
 	}
 	return curItem;
@@ -281,21 +281,21 @@ int writeDir(char * name, char * ext, char * descr, char * flag, int size) {
 	DirectoryNode dirPage[DIR_PER_FB];
 	int exists = findDir(name);
 	if (exists >= 0) {
-		LeiaBlocoFisico(OFFSET + CUR_PAGE(exists), &dirPage);
-		dirNodeSetValues(&dirPage[CUR_ITEM(exists)], name, ext, descr, flag, dirPage[CUR_ITEM(exists)].next, size);
-		EscrevaBlocoFisico(OFFSET + CUR_PAGE(exists), &dirPage);
+		LeiaBlocoFisico(OFFSET + CUR_PAGE(exists), (void *)&dirPage);
+		dirNodeSetValues((void *)&dirPage[CUR_ITEM(exists)], name, ext, descr, flag, dirPage[CUR_ITEM(exists)].next, size);
+		EscrevaBlocoFisico(OFFSET + CUR_PAGE(exists), (void *)&dirPage);
 		return exists;
 	} else {
 		int emptyDirId = findEmptyDirNode();
-		LeiaBlocoFisico(PREV_PAGE(emptyDirId) + OFFSET, &dirPage);
+		LeiaBlocoFisico(PREV_PAGE(emptyDirId) + OFFSET, (void *)&dirPage);
 		int nextPointedNode = dirPage[PREV_ITEM(emptyDirId)].next;
 		dirPage[PREV_ITEM(emptyDirId)].next = emptyDirId;
 		if (CUR_PAGE(emptyDirId) != PREV_PAGE(emptyDirId)) {
-			EscrevaBlocoFisico(PREV_PAGE(emptyDirId) + OFFSET, &dirPage);
-			LeiaBlocoFisico(CUR_PAGE(emptyDirId) + OFFSET, &dirPage);
+			EscrevaBlocoFisico(PREV_PAGE(emptyDirId) + OFFSET, (void *)&dirPage);
+			LeiaBlocoFisico(CUR_PAGE(emptyDirId) + OFFSET, (void *)&dirPage);
 		}
-		dirNodeSetValues(&dirPage[CUR_ITEM(emptyDirId)], name, ext, descr, flag, nextPointedNode, size);
-		EscrevaBlocoFisico(CUR_PAGE(emptyDirId) + OFFSET, &dirPage);
+		dirNodeSetValues((void *)&dirPage[CUR_ITEM(emptyDirId)], name, ext, descr, flag, nextPointedNode, size);
+		EscrevaBlocoFisico(CUR_PAGE(emptyDirId) + OFFSET, (void *)&dirPage);
 		return emptyDirId;
 	}
 }
@@ -303,10 +303,10 @@ int writeDir(char * name, char * ext, char * descr, char * flag, int size) {
 #undef OFFSET
 #undef NEXT
 #undef CURRENT
-#undef CUR_PAGE(x)
-#undef CUR_ITEM(x)
-#undef PREV_PAGE(x) 
-#undef PREV_ITEM(x)
+#undef CUR_PAGE
+#undef CUR_ITEM
+#undef PREV_PAGE 
+#undef PREV_ITEM
 #pragma endregion
 
 #pragma region INODES
@@ -316,12 +316,12 @@ int writeDir(char * name, char * ext, char * descr, char * flag, int size) {
 void listAllINodes();
 int findEmptyINode();
 void freeINodeRef(int iNodeId);
-int writeSequence(int iNodeRef, int size, byte * content);
+void writeSequence(int iNodeRef, int size, byte * content);
 
 void listAllINodes() {
 	iNode iNodePage[INODE_PER_FB];
 	for (size_t i = 0; i < 3; i++) {
-		LeiaBlocoFisico(BITMAP_FB_COUNT + DIR_FB_COUNT + i, &iNodePage);
+		LeiaBlocoFisico(BITMAP_FB_COUNT + DIR_FB_COUNT + i, (void *)&iNodePage);
 		for (size_t j = 0; j < INODE_PER_FB; j++) {
 			printf("\nINode Id: %d Ref:", iNodePage[j].id);
 			for (size_t z = 0; z < INODE_REFERENCES_COUNT; z++)
@@ -335,12 +335,12 @@ void listAllINodes() {
 int findEmptyINode() {
 	int curInodeId = 0, counter = 0, curPage = 0, curItem = 0;
 	iNode iNodePage[INODE_PER_FB];
-	memset(&iNodePage, 0, SB_TAM_BLOCO_FISICO);
-	LeiaBlocoFisico(OFFSET, &iNodePage);
+	memset((void *)&iNodePage, 0, SB_TAM_BLOCO_FISICO);
+	LeiaBlocoFisico(OFFSET, (void *)&iNodePage);
 	while (iNodePage[curItem].flag == '1') {
 		counter++;
 		if (curPage != CUR_PAGE(counter))
-			LeiaBlocoFisico(OFFSET + CUR_PAGE(counter), &iNodePage);
+			LeiaBlocoFisico(OFFSET + CUR_PAGE(counter), (void *)&iNodePage);
 		curPage = CUR_PAGE(counter);
 		curItem = CUR_ITEM(counter);
 		curInodeId = iNodePage[curItem].id;
@@ -351,12 +351,12 @@ int findEmptyINode() {
 void freeINodeRef(int iNodeId) {
 	iNode iNodePage[INODE_PER_FB];
 	int curPage = CUR_PAGE(iNodeId), curItem = CUR_ITEM(iNodeId);
-	LeiaBlocoFisico(OFFSET + CUR_PAGE(iNodeId), &iNodePage);
+	LeiaBlocoFisico(OFFSET + CUR_PAGE(iNodeId), (void *)&iNodePage);
 	while (iNodePage[iNodeId].id != 0) {
 		int i = 0;
 		if (curPage != CUR_PAGE(iNodeId)) {
-			EscrevaBlocoFisico(OFFSET + curPage, &iNodePage);
-			LeiaBlocoFisico(OFFSET + CUR_PAGE(iNodeId), &iNodePage);
+			EscrevaBlocoFisico(OFFSET + curPage, (void *)&iNodePage);
+			LeiaBlocoFisico(OFFSET + CUR_PAGE(iNodeId), (void *)&iNodePage);
 		}
 		curPage = CUR_PAGE(iNodeId);
 		curItem = CUR_ITEM(iNodeId);
@@ -368,32 +368,32 @@ void freeINodeRef(int iNodeId) {
 			i++;
 		}
 	}
-	EscrevaBlocoFisico(OFFSET + curPage, &iNodePage);
+	EscrevaBlocoFisico(OFFSET + curPage, (void *)&iNodePage);
 }
 
-int writeSequence(int iNodeRef, int size, byte * content) {
+void writeSequence(int iNodeRef, int size, byte * content) {
 	int lBNeeded = size / SB_TAM_BLOCO_LOGICO, curLB, i = 0;
 	iNode iNodePage[INODE_PER_FB];
 	bool ftExecution = true;
 	if ((size % SB_TAM_BLOCO_LOGICO) > 0) lBNeeded++;
-	LeiaBlocoFisico(OFFSET + CUR_PAGE(iNodeRef), &iNodePage);
+	LeiaBlocoFisico(OFFSET + CUR_PAGE(iNodeRef), (void *)&iNodePage);
 	while (lBNeeded > i) {
 		curLB = findEmptyLB();
-		writeLB(curLB, &content[i * SB_TAM_BLOCO_LOGICO]);
+		writeLB(curLB, (void *)&content[i * SB_TAM_BLOCO_LOGICO]);
 		if (((i % INODE_REFERENCES_COUNT) == 0) && (ftExecution == false)) {
-			EscrevaBlocoFisico(OFFSET + CUR_PAGE(iNodeRef), &iNodePage);
+			EscrevaBlocoFisico(OFFSET + CUR_PAGE(iNodeRef), (void *)&iNodePage);
 			int nextINodeRef = findEmptyINode();
 			iNodePage[CUR_ITEM(iNodeRef)].nextNode = nextINodeRef;
-			EscrevaBlocoFisico(OFFSET + CUR_PAGE(iNodeRef), &iNodePage);
+			EscrevaBlocoFisico(OFFSET + CUR_PAGE(iNodeRef), (void *)&iNodePage);
 			iNodeRef = nextINodeRef;
-			LeiaBlocoFisico(OFFSET + CUR_PAGE(iNodeRef), &iNodePage);
+			LeiaBlocoFisico(OFFSET + CUR_PAGE(iNodeRef), (void *)&iNodePage);
 		}
 		iNodePage[CUR_ITEM(iNodeRef)].flag = '1';
 		iNodePage[CUR_ITEM(iNodeRef)].blockReference[i % INODE_REFERENCES_COUNT] = curLB;
 		i++;
 		ftExecution = false;
 	}
-	EscrevaBlocoFisico(OFFSET + CUR_PAGE(iNodeRef), &iNodePage);
+	EscrevaBlocoFisico(OFFSET + CUR_PAGE(iNodeRef), (void *)&iNodePage);
 }
 
 void readSequence(int iNodeRef, byte * content, int size) {
@@ -401,16 +401,16 @@ void readSequence(int iNodeRef, byte * content, int size) {
 	iNode iNodePage[INODE_PER_FB];
 	bool ftExecution = true;
 	if ((size % SB_TAM_BLOCO_LOGICO) > 0) i++;
-	LeiaBlocoFisico(OFFSET + CUR_PAGE(iNodeRef), &iNodePage);
+	LeiaBlocoFisico(OFFSET + CUR_PAGE(iNodeRef), (void *)&iNodePage);
 	byte * localBuffer = malloc(sizeof(byte) * i * SB_TAM_BLOCO_LOGICO);
 	while (counter < i) {
 		if (iNodePage[CUR_ITEM(iNodeRef)].blockReference[counter % INODE_REFERENCES_COUNT] == 0) return;
 		if (((counter % INODE_REFERENCES_COUNT) == 0) && (ftExecution == false)) {
 			iNodeRef = iNodePage[CUR_ITEM(iNodeRef)].nextNode;
-			LeiaBlocoFisico(OFFSET + CUR_PAGE(iNodeRef), &iNodePage);
+			LeiaBlocoFisico(OFFSET + CUR_PAGE(iNodeRef), (void *)&iNodePage);
 		}
 		curLB = iNodePage[CUR_ITEM(iNodeRef)].blockReference[counter % INODE_REFERENCES_COUNT];
-		readLB(curLB, &localBuffer[counter * SB_TAM_BLOCO_LOGICO]);
+		readLB(curLB, (void *)&localBuffer[counter * SB_TAM_BLOCO_LOGICO]);
 		counter++;
 		ftExecution = false;
 	}
@@ -418,8 +418,8 @@ void readSequence(int iNodeRef, byte * content, int size) {
 	free(localBuffer);
 }
 
-#undef CUR_PAGE(x)
-#undef CUR_ITEM(x)
+#undef CUR_PAGE
+#undef CUR_ITEM
 #undef OFFSET
 #pragma endregion
 
@@ -428,20 +428,20 @@ void writeFile(char * name, char * ext, char * flag, char * descr, int size, byt
 	int dirWritedId = writeDir(name, ext, descr, flag, size);
 	int curDirItem = dirWritedId % DIR_PER_FB;
 	int curDirPage = dirWritedId / DIR_PER_FB;
-	LeiaBlocoFisico(BITMAP_FB_COUNT + curDirPage, &dirPage);
+	LeiaBlocoFisico(BITMAP_FB_COUNT + curDirPage, (void *)&dirPage);
 	if (dirPage[curDirItem].iNodeReference == -1) {
 		iNode iNodePage[INODE_PER_FB];
 		int ftInodeId = findEmptyINode();
 		int curInodeItem = ftInodeId % INODE_PER_FB;
 		int curInodePage = ftInodeId / INODE_PER_FB;
-		LeiaBlocoFisico(BITMAP_FB_COUNT + DIR_FB_COUNT + curInodePage, &iNodePage);
+		LeiaBlocoFisico(BITMAP_FB_COUNT + DIR_FB_COUNT + curInodePage, (void *)&iNodePage);
 		dirPage[curDirItem].iNodeReference = iNodePage[curInodeItem].id;
 		writeSequence(ftInodeId, size, content);
 	} else {
 		freeINodeRef(dirPage[curDirItem].iNodeReference);
 		writeSequence(dirPage[curDirItem].iNodeReference, size, content);
 	}
-	EscrevaBlocoFisico(BITMAP_FB_COUNT + curDirPage, &dirPage);
+	EscrevaBlocoFisico(BITMAP_FB_COUNT + curDirPage, (void *)&dirPage);
 }
 
 bool deleteFile(char * name) {
@@ -450,13 +450,13 @@ bool deleteFile(char * name) {
 		int curDirItem = dirId % DIR_PER_FB;
 		int curDirPage = dirId / DIR_PER_FB;
 		DirectoryNode dirPage[DIR_PER_FB];
-		LeiaBlocoFisico(BITMAP_FB_COUNT + curDirPage, &dirPage);
+		LeiaBlocoFisico(BITMAP_FB_COUNT + curDirPage, (void *)&dirPage);
 		int next = dirPage[curDirItem].next;
 		int iNodeRef = dirPage[curDirItem].iNodeReference;
 		freeINodeRef(iNodeRef);
-		memset(&dirPage[curDirItem].filename, 0, sizeof(dirPage[curDirItem].filename));
-		memset(&dirPage[curDirItem].fileExtension, 0, sizeof(dirPage[curDirItem].fileExtension));
-		memset(&dirPage[curDirItem].description, 0, sizeof(dirPage[curDirItem].description));
+		memset((void *)&dirPage[curDirItem].filename, 0, sizeof(dirPage[curDirItem].filename));
+		memset((void *)&dirPage[curDirItem].fileExtension, 0, sizeof(dirPage[curDirItem].fileExtension));
+		memset((void *)&dirPage[curDirItem].description, 0, sizeof(dirPage[curDirItem].description));
 		dirPage[curDirItem].flag = 0;
 		dirPage[curDirItem].size = -1;
 		dirPage[curDirItem].next = 0;
@@ -465,24 +465,25 @@ bool deleteFile(char * name) {
 		int prevDirItem = prevDirId % DIR_PER_FB;
 		int prevDirPage = prevDirId / DIR_PER_FB;
 		if (curDirPage != prevDirPage) {
-			EscrevaBlocoFisico(BITMAP_FB_COUNT + curDirPage, &dirPage);
-			LeiaBlocoFisico(BITMAP_FB_COUNT + prevDirPage, &dirPage);
+			EscrevaBlocoFisico(BITMAP_FB_COUNT + curDirPage, (void *)&dirPage);
+			LeiaBlocoFisico(BITMAP_FB_COUNT + prevDirPage, (void *)&dirPage);
 		}
 		dirPage[prevDirItem].next = next;
-		EscrevaBlocoFisico(BITMAP_FB_COUNT + prevDirPage, &dirPage);
+		EscrevaBlocoFisico(BITMAP_FB_COUNT + prevDirPage, (void *)&dirPage);
 		return true;
 	}
 	return false;
 }
 
-void readFile(char * name, byte * dados) {
+bool readFile(char * name, byte * dados) {
 	int dirId = findDir(name);
 	if (dirId > 0) {
 		int curDirItem = dirId % DIR_PER_FB;
 		int curDirPage = dirId / DIR_PER_FB;
 		DirectoryNode dirPage[DIR_PER_FB];
-		LeiaBlocoFisico(BITMAP_FB_COUNT + curDirPage, &dirPage);
+		LeiaBlocoFisico(BITMAP_FB_COUNT + curDirPage, (void *)&dirPage);
 		readSequence(dirPage[curDirItem].iNodeReference, dados, dirPage[curDirItem].size);
+		return true;
 	}
 	return false;
 }
@@ -499,10 +500,10 @@ FileInfo * getFileInfo(char * name) {
 		int curDirItem = dirId % DIR_PER_FB;
 		int curDirPage = dirId / DIR_PER_FB;
 		DirectoryNode dirPage[DIR_PER_FB];
-		LeiaBlocoFisico(BITMAP_FB_COUNT + curDirPage, &dirPage);
-		memcpy(&fi->name, dirPage[curDirItem].filename, sizeof(fi->name));
-		memcpy(&fi->ext, dirPage[curDirItem].fileExtension, sizeof(fi->ext));
-		memcpy(&fi->desc, dirPage[curDirItem].description, sizeof(fi->desc));
+		LeiaBlocoFisico(BITMAP_FB_COUNT + curDirPage, (void *)&dirPage);
+		memcpy((void *)&fi->name, dirPage[curDirItem].filename, sizeof(fi->name));
+		memcpy((void *)&fi->ext, dirPage[curDirItem].fileExtension, sizeof(fi->ext));
+		memcpy((void *)&fi->desc, dirPage[curDirItem].description, sizeof(fi->desc));
 		fi->size = dirPage[curDirItem].size;
 	}
 	else

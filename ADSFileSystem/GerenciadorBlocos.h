@@ -30,7 +30,7 @@ typedef struct FILE_INFO {
 
 __declspec(dllexport) void writeFile(char * name, char * ext, char * flag, char * descr, int size, byte * content);
 __declspec(dllexport) bool deleteFile(char * name);
-__declspec(dllexport) void readFile(char * name, byte * dados);
+__declspec(dllexport) bool readFile(char * name, byte * dados);
 __declspec(dllexport) bool existsFile(char * name);
 __declspec(dllexport) void formatDisk();
 __declspec(dllexport) FileInfo * getFileInfo(char * name);
