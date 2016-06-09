@@ -10,6 +10,7 @@ namespace ADSFileSystemGUI
         public MainPage()
         {
             InitializeComponent();
+            // Pergunta se deseja formatar disco
             DialogResult response = MessageBox.Show("Deseja formatar o Disco Virtual?", 
                 "Disco Virtual", 
                 MessageBoxButtons.YesNo, 
@@ -18,8 +19,12 @@ namespace ADSFileSystemGUI
                 ADSIO.formatDisk();
         }
         
+        // Buffer do ultimo arquivo carregado
         private byte[] fileBuffer;
-         
+        
+        //
+        // Eventos de click
+        //
         private void btnFileOpen_Click(object sender, EventArgs e)
         {
             if (ofdFilePicker.ShowDialog() == DialogResult.OK)

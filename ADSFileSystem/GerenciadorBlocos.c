@@ -38,12 +38,14 @@ int findEmptyLB();
 #define BM_CUR_PG ((RES_AREA_OFFSET + idFB) / SB_TAM_BLOCO_FISICO)
 #define BM_CUR_ITEM ((RES_AREA_OFFSET + idFB) % SB_TAM_BLOCO_FISICO)	
 
+// Le bloco logico
 void readLB(int idLB, byte* buffer) {
 	int idFB = idLB * FB_PER_LB; // GET FB ID
 	for (size_t i = 0; i < FB_PER_LB; i++)
 		LeiaBlocoFisico(RES_AREA_OFFSET + idFB++, (void *)&buffer[SB_TAM_BLOCO_FISICO * i]);
 }
 
+// Escreve bloco logico
 void writeLB(int idLB, byte* buffer) {
 	byte bitmapPage[SB_TAM_BLOCO_FISICO];
 	int idFB = idLB * DIR_PER_FB;
@@ -56,6 +58,7 @@ void writeLB(int idLB, byte* buffer) {
 	EscrevaBlocoFisico(curPage, (void *)&bitmapPage);
 }
 
+// Libera utilização de bloco logico (exclui)
 void freeLB(int idLB) {
 	byte bitmapPage[SB_TAM_BLOCO_FISICO];
 	int idFB = idLB *= DIR_PER_FB;
@@ -68,6 +71,7 @@ void freeLB(int idLB) {
 	EscrevaBlocoFisico(curPage, (void *)&bitmapPage);
 }
 
+// Procura primeiro bloco logico vazio
 int findEmptyLB() {
 	byte bitmapPage[SB_TAM_BLOCO_FISICO];
 	LeiaBlocoFisico(0, (void *)&bitmapPage);
@@ -95,6 +99,7 @@ void iNodesCreate();
 void bitmapSetReservedArea();
 void formatDisk();
 
+// Especificação de diso
 void diskSpec() {
 	printf("\
 			Total em GB: %d\n\
@@ -117,6 +122,7 @@ void diskSpec() {
 		RES_AREA_OFFSET);
 }
 
+// Cria bitmap
 void bitmapCreate() {
 	byte bitmapPage[SB_TAM_BLOCO_FISICO];
 	memset((void *)&bitmapPage, '0', SB_TAM_BLOCO_FISICO * sizeof(byte));
@@ -124,6 +130,7 @@ void bitmapCreate() {
 		EscrevaBlocoFisico(i, (void *)&bitmapPage);
 }
 
+// Cria arvore de diretório
 void dirTreeCreate() {
 	DirectoryNode dirPage[DIR_FB_COUNT];
 	memset((void *)&dirPage, 0, SB_TAM_BLOCO_FISICO);
@@ -142,6 +149,7 @@ void dirTreeCreate() {
 	EscrevaBlocoFisico(BITMAP_FB_COUNT, (void *)&dirPage);
 }
 
+// Cria array de iNodes
 void iNodesCreate() {
 	iNode iNodePage[INODE_PER_FB];
 	memset((void *)&iNodePage, 0, SB_TAM_BLOCO_FISICO);
@@ -152,6 +160,7 @@ void iNodesCreate() {
 	}
 }
 
+// Grava no bitmap areas reservadas
 void bitmapSetReservedArea() {
 	byte bitmapPage[SB_TAM_BLOCO_FISICO];
 	memset((void *)&bitmapPage, '1', SB_TAM_BLOCO_FISICO * sizeof(byte));
@@ -162,6 +171,7 @@ void bitmapSetReservedArea() {
 	EscrevaBlocoFisico((RES_AREA_OFFSET / SB_TAM_BLOCO_FISICO), (void *)&bitmapPage);
 }
 
+// Formata disco
 void formatDisk() {
 #ifdef DEBUG
 	diskSpec();
@@ -182,8 +192,10 @@ void formatDisk() {
 
 #pragma region DIRECTORY
 void listAllDirNodes();
+int countAllDirNodes();
 int findEmptyDirNode();
 void dirNodeSetValues(DirectoryNode * dirNode, char * name, char * ext, char * descr, char * flag, int nextNode, int size);
+int findPrevDir(int dirId);
 int findDir(char * name);
 int writeDir(char * name, char * ext, char * descr, char * flag, int size);
 
@@ -191,6 +203,8 @@ int writeDir(char * name, char * ext, char * descr, char * flag, int size);
 #define CUR_ITEM(x) (x % DIR_PER_FB)
 #define CURRENT (dirPage[CUR_ITEM(curItem)])
 #define OFFSET (BITMAP_FB_COUNT)
+
+// Lista todos os diretorios
 void listAllDirNodes() {
 	DirectoryNode dirPage[DIR_PER_FB];
 	int curItem = 0, nextItem;
@@ -212,6 +226,7 @@ void listAllDirNodes() {
 	}
 }
 
+// Conta numero de diretorios
 int countAllDirNodes() {
 	DirectoryNode dirPage[DIR_PER_FB];
 	int curItem = 0, nextItem, i = 0;
@@ -227,6 +242,7 @@ int countAllDirNodes() {
 	return i;
 }
 
+// Encontra primeiro diretorio vazio
 int findEmptyDirNode() {
 	int curDirId = 0, counter = 0, curPage = 0, curItem = 0;
 	DirectoryNode dirPage[DIR_PER_FB];
@@ -242,6 +258,7 @@ int findEmptyDirNode() {
 	return curDirId;
 }
 
+// Escreve valor no strucut DirectoryNode
 void dirNodeSetValues(DirectoryNode * dirNode, char * name, char * ext, char * descr, char * flag, int nextNode, int size) {
 	strcpy(dirNode->filename, name);
 	strcpy(dirNode->fileExtension, ext);
@@ -251,6 +268,7 @@ void dirNodeSetValues(DirectoryNode * dirNode, char * name, char * ext, char * d
 	dirNode->size = size;
 }
 
+// Escontra diretorio anterior em relação ao ID enviado
 int findPrevDir(int dirId) {
 	DirectoryNode dirPage[DIR_PER_FB];
 	LeiaBlocoFisico(OFFSET + CUR_PAGE(dirId), (void *)&dirPage);
@@ -261,6 +279,7 @@ int findPrevDir(int dirId) {
 	return dirId;
 }
 
+// Encontra diretorio em relação ao ID enviado
 int findDir(char * name) {
 	DirectoryNode dirPage[DIR_PER_FB];
 	int curItem = 0, nextItem;
@@ -275,6 +294,7 @@ int findDir(char * name) {
 	return curItem;
 }
 
+// Algoritmo de Escrita de DirectoryNode
 #define PREV_PAGE(x) ((x - 1) / DIR_PER_FB)
 #define PREV_ITEM(x) ((x - 1) % DIR_PER_FB)
 int writeDir(char * name, char * ext, char * descr, char * flag, int size) {
@@ -313,11 +333,13 @@ int writeDir(char * name, char * ext, char * descr, char * flag, int size) {
 #define CUR_PAGE(x) (x / INODE_PER_FB)
 #define CUR_ITEM(x) (x % INODE_PER_FB)
 #define OFFSET (BITMAP_FB_COUNT + DIR_FB_COUNT)
-void listAllINodes();
 int findEmptyINode();
 void freeINodeRef(int iNodeId);
 void writeSequence(int iNodeRef, int size, byte * content);
+void readSequence(int iNodeRef, byte * content, int size);
 
+#ifdef DEBUG
+// Lista todos os iNodes
 void listAllINodes() {
 	iNode iNodePage[INODE_PER_FB];
 	for (size_t i = 0; i < 3; i++) {
@@ -331,7 +353,9 @@ void listAllINodes() {
 		}
 	}
 }
+#endif // DEBUG
 
+// Encontra primeiro iNode vazio
 int findEmptyINode() {
 	int curInodeId = 0, counter = 0, curPage = 0, curItem = 0;
 	iNode iNodePage[INODE_PER_FB];
@@ -348,6 +372,7 @@ int findEmptyINode() {
 	return curInodeId;
 }
 
+// Libera blocos logicos referenciados pelo iNode, e iNodes subsequentes
 void freeINodeRef(int iNodeId) {
 	iNode iNodePage[INODE_PER_FB];
 	int curPage = CUR_PAGE(iNodeId), curItem = CUR_ITEM(iNodeId);
@@ -371,6 +396,8 @@ void freeINodeRef(int iNodeId) {
 	EscrevaBlocoFisico(OFFSET + curPage, (void *)&iNodePage);
 }
 
+// Sequencia de gravação
+// Monta estrutura dos iNodes
 void writeSequence(int iNodeRef, int size, byte * content) {
 	int lBNeeded = size / SB_TAM_BLOCO_LOGICO, curLB, i = 0;
 	iNode iNodePage[INODE_PER_FB];
@@ -396,6 +423,8 @@ void writeSequence(int iNodeRef, int size, byte * content) {
 	EscrevaBlocoFisico(OFFSET + CUR_PAGE(iNodeRef), (void *)&iNodePage);
 }
 
+// Sequencia de leitura
+// Recria dados a partir de iNodes
 void readSequence(int iNodeRef, byte * content, int size) {
 	int i = size / SB_TAM_BLOCO_LOGICO, curLB, counter = 0;
 	iNode iNodePage[INODE_PER_FB];
@@ -423,6 +452,7 @@ void readSequence(int iNodeRef, byte * content, int size) {
 #undef OFFSET
 #pragma endregion
 
+// Escreve arquivo
 void writeFile(char * name, char * ext, char * flag, char * descr, int size, byte * content) {
 	DirectoryNode dirPage[DIR_PER_FB];
 	int dirWritedId = writeDir(name, ext, descr, flag, size);
@@ -444,6 +474,7 @@ void writeFile(char * name, char * ext, char * flag, char * descr, int size, byt
 	EscrevaBlocoFisico(BITMAP_FB_COUNT + curDirPage, (void *)&dirPage);
 }
 
+// Deleta arquivo
 bool deleteFile(char * name) {
 	int dirId = findDir(name);
 	if (dirId > 0) {
@@ -475,6 +506,7 @@ bool deleteFile(char * name) {
 	return false;
 }
 
+// Le arquivo
 bool readFile(char * name, byte * dados) {
 	int dirId = findDir(name);
 	if (dirId > 0) {
@@ -488,11 +520,13 @@ bool readFile(char * name, byte * dados) {
 	return false;
 }
 
+// O arquivo existe?
 bool existsFile(char * name) {
 	if (findDir(name) > 0) return true;
 	else return false;
 }
 
+// Recupera informações sobre o arquivo
 FileInfo * getFileInfo(char * name) {
 	FileInfo * fi = malloc(sizeof(FileInfo));
 	int dirId = findDir(name);
@@ -511,10 +545,11 @@ FileInfo * getFileInfo(char * name) {
 	return fi;
 }
 
-/*
+#ifdef DEBUG
 int main() {
 	formatDisk();
 	writeFile("Marcelo", "exe", 'f', "arquivo", 6, "abcde");
-	printf("%d",existsFile("Marcelo"));
+	printf("%d", existsFile("Marcelo"));
 	return 1;
-}*/
+}
+#endif // DEBUG

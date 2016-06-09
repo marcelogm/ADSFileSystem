@@ -4,6 +4,8 @@ using System.Runtime.InteropServices;
 
 namespace ADSFileSystemGUI
 {
+    // Classe com informações
+    // e conteúdo do arquivo
     public class ADSFile
     {
         public ADSFile(FileInfo info, byte[] data)
@@ -15,6 +17,7 @@ namespace ADSFileSystemGUI
         public byte[] Data { get; set; }
     }
 
+    // Estrutura de informações do arquivo
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
     public struct FileInfo
     {
@@ -39,6 +42,7 @@ namespace ADSFileSystemGUI
     public class ADSIO
     {
         #region DLLInteraction
+        // Assinaturas da DLL
         private const string dllUri = "ADSFileSystem.dll";
         [DllImport(dllUri, CharSet = CharSet.Ansi, ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
         private extern static unsafe void writeFile(string name, string ext, char* flag, string descr, int size, byte* content);
@@ -54,6 +58,7 @@ namespace ADSFileSystemGUI
         [DllImport(dllUri, CharSet = CharSet.Ansi, ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
         private extern static IntPtr getFileInfo(string name);
 
+        // Escreve arquivo
         private unsafe static bool safeWriteFile(string name, string ext, char flag, string descr, int size, byte[] content)
         {
             try
@@ -69,6 +74,7 @@ namespace ADSFileSystemGUI
                 return false;
             }
         }
+        // Deleta arquivo
         private static bool safeDeleteFile(string name)
         {
             try
@@ -82,6 +88,7 @@ namespace ADSFileSystemGUI
                 return false;
             }
         }
+        // Le arquivo
         private static byte[] safeReadFile(string name, int size)
         {
             try
@@ -98,6 +105,9 @@ namespace ADSFileSystemGUI
         }
         #endregion
       
+        // Abre arquivo e cria um objeto
+        // representativo para a manipulação
+        // Estrutura similar ao fopen de C
         public ADSFile OpenFile(string fileName, string extension, string description)
         {
             ADSFile file; FileInfo info;
@@ -117,6 +127,9 @@ namespace ADSFileSystemGUI
             return file;
         }
 
+        // Escreve arquivo e 
+        // com a representação ADSFile
+        // Estrutura similar ao fwrite de C
         public int WriteFile(byte[] data, int size, int count, ADSFile stream)
         {
             if (size == 0 || count == 0) return -1;
@@ -137,6 +150,9 @@ namespace ADSFileSystemGUI
             }
         }
 
+        // Le dados de arquivo
+        // com a representação do ADSFile
+        // Estrutura similar ao fread de C
         public byte[] ReadFile(int size, int count, ADSFile stream)
         {
             if (size == 0 || count == 0) return null;
@@ -155,6 +171,9 @@ namespace ADSFileSystemGUI
             }
         }
 
+        // Envia arquivo
+        // para disco usando a representação ADSFile
+        // Estrutura similar ao fclose de C
         public bool CloseFile(ADSFile stream)
         {
             if (!stream.Equals(null))

@@ -1,5 +1,7 @@
 #include "Driver.h"
 
+// DRIVER
+// Le bloco fisico
 int LeiaBlocoFisico(int id, byte * buffer) {
 	FILE *arq ;
 	char textId[33];
@@ -13,6 +15,7 @@ int LeiaBlocoFisico(int id, byte * buffer) {
 	return 1;
 }
 
+// Escreve bloco fisico
 int EscrevaBlocoFisico(int id, byte * buffer) {
 	FILE * pFile;
 	char textId[33];

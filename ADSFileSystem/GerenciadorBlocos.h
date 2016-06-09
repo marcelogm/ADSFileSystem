@@ -1,21 +1,34 @@
 #define INODE_REFERENCES_COUNT 13
-// DADOS DO SUPER BLOCO
 
+// SIZE 64
 typedef struct I_NODE{
-	int id;					// -> self identifier
-	int blockReference[INODE_REFERENCES_COUNT]; // -> pointer to block address
-	int nextNode;			// -> pointer to another iNode
+	// ID DO INODE
+	int id;			
+	// REFENCIAS PARA BLOCOS LOGICOS
+	int blockReference[INODE_REFERENCES_COUNT];
+	// REFERENCIA PARA O PROXIMO INODE
+	int nextNode;
+	// FLAG GENERICA (LIBERADO OU NAO)
 	int flag;
 } iNode;
 
+// SIZE 64
 typedef struct DIR_NODE{
+	// ID DO DIRETORIO
 	int id;
-	char filename[21]; 
+	// NOME DO ARQUIVO
+	char filename[21];
+	// EXTENSAO
 	char fileExtension[4];
+	// FLAG GENERICA
 	unsigned char flag;
+	// DESCRICAO
 	char description[21];
+	// TAMANHO (MELHOR IMPLENTACAO COM unsigned long)
 	int size;
+	// REFERENCIA PARA INODE
 	int iNodeReference;
+	// REFERENCIA PARA O PROXIMO DIRETORIO
 	int next;
 } DirectoryNode;
 
@@ -28,6 +41,8 @@ typedef struct FILE_INFO {
 
 #include <stdio.h>
 
+// Declaracao de funcoes
+// Exportadas para DLL
 __declspec(dllexport) void writeFile(char * name, char * ext, char * flag, char * descr, int size, byte * content);
 __declspec(dllexport) bool deleteFile(char * name);
 __declspec(dllexport) bool readFile(char * name, byte * dados);
